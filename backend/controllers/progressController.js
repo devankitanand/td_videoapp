@@ -18,28 +18,30 @@ exports.getProgress = async (req, res) => {
 };
 
 // Update progress for a specific user and video
+
 exports.updateProgress = async (req, res) => {
   try {
     const { userId, videoId } = req.params;
-    const { newInterval, videoLength, lastPlayed } = req.body;
+    let { newInterval, videoLength, lastPlayed } = req.body;
+    
+    // CONVERT decimal values into integers using Math.floor.
+    // For example, 9.346363 becomes 9.
+    newInterval.start = Math.floor(newInterval.start); 
+    newInterval.end = Math.floor(newInterval.end);       
+    lastPlayed = Math.floor(lastPlayed);                
+    videoLength = Math.floor(videoLength);               
 
-    // Validate newInterval and videoLength
-    if (
-      !newInterval ||
-      typeof newInterval.start !== 'number' ||
-      typeof newInterval.end !== 'number' ||
-      newInterval.end <= newInterval.start
-    ) {
+    // Basic validation after conversion
+    if (newInterval.end <= newInterval.start) {
       return res.status(400).json({ error: 'Invalid interval provided' });
     }
-    if (typeof videoLength !== 'number' || videoLength <= 0) {
+    if (videoLength <= 0) {
       return res.status(400).json({ error: 'Invalid video length' });
     }
 
     let progress = await Progress.findOne({ userId, videoId });
 
     if (!progress) {
-      // Create new progress document if it doesn't exist
       progress = new Progress({
         userId,
         videoId,
@@ -49,14 +51,14 @@ exports.updateProgress = async (req, res) => {
         progressPercentage: 0
       });
     } else {
-      // Add the new interval and merge the existing intervals
+      // Add and merge new interval
       progress.watchedIntervals.push(newInterval);
       progress.watchedIntervals = mergeIntervals(progress.watchedIntervals);
       progress.lastPlayed = lastPlayed;
       progress.videoLength = videoLength;
     }
 
-    // Calculate updated progress percentage based on unique full seconds watched
+    // Calculate updated progress percentage based on unique full seconds watched.
     progress.progressPercentage = calculateProgress(progress.watchedIntervals, videoLength);
     await progress.save();
 

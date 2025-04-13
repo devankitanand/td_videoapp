@@ -9,7 +9,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>MERN Video Progress Tracker</h1>
+      <h1>TuteDude Video Progress Tracker</h1>
       <VideoPlayer userId={userId} videoId={videoId} videoLength={videoLength} />
     </div>
   );
